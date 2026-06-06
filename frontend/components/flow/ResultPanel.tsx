@@ -286,6 +286,17 @@ export function ResultPanel({
                   {result.durationLabel}
                 </span>
               </div>
+              {!result.aiGenerated && (
+                <div
+                  className="flex items-center gap-[6px] rounded-pill border border-solid border-[#F3D9A8] bg-[#FDF6EA] px-[14px] py-[6px]"
+                  title="No AI key configured — this deck was built with the offline template, not the model."
+                >
+                  <span className="size-[8px] shrink-0 rounded-full bg-brand-orange" />
+                  <span className="whitespace-nowrap text-[13px] font-semibold leading-normal text-[#8A5A12] [word-break:break-word]">
+                    Generated offline · AI off
+                  </span>
+                </div>
+              )}
             </div>
             <button
               type="button"

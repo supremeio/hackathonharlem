@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generateDeck, getFollowUp, getInterviewQuestions } from "@/lib/api";
+import {
+  extractIntake,
+  generateDeck,
+  getFollowUp,
+  getInterviewQuestions,
+} from "@/lib/api";
 import type {
   AnswerNode,
   DeckResult,
@@ -32,6 +37,11 @@ export function useDeckFlow() {
   const [answers, setAnswers] = useState<Record<string, AnswerNode>>({});
   const [pendingFollowUp, setPendingFollowUp] = useState<FollowUpQuestion | null>(null);
   const [draft, setDraft] = useState("");
+  // AI extraction of the first message → answers pre-filled (and editable) per question.
+  const [analyzing, setAnalyzing] = useState(false);
+  const [prefills, setPrefills] = useState<Record<string, string>>({});
+  // True while the AI decides the next follow-up after a submit (loading state).
+  const [submitting, setSubmitting] = useState(false);
 
   const [stages, setStages] = useState<GenerationStage[]>(INITIAL_STAGES);
   const [result, setResult] = useState<DeckResult | null>(null);
@@ -52,18 +62,45 @@ export function useDeckFlow() {
 
   const current = questions[index];
 
+  /** What a question's input should show: a submitted answer wins, else the
+   *  AI-extracted pre-fill, else empty. */
+  const draftFor = useCallback(
+    (qid: string | undefined, ans = answers, pf = prefills) =>
+      (qid ? ans[qid]?.answer ?? pf[qid] ?? "" : ""),
+    [answers, prefills],
+  );
+
   const start = useCallback(async (prompt: string, _tier: number = 1) => {
     tierRef.current = 1;
     setError(null);
     setInitialPrompt(prompt);
-    const qs = await getInterviewQuestions(prompt);
-    setQuestions(qs);
+    setQuestions([]);
     setIndex(0);
     setMaxReached(0);
     setAnswers({});
     setPendingFollowUp(null);
+    setPrefills({});
     setDraft("");
     setPhase("questions");
+
+    // Show the "analyzing your message" typing bubble while we (a) load the
+    // question script and (b) extract any answers already present in the prompt.
+    setAnalyzing(true);
+    const [qs, extracted] = await Promise.all([
+      getInterviewQuestions(prompt),
+      extractIntake(prompt),
+      delay(900), // minimum dwell so the typing animation reads as deliberate
+    ]);
+
+    const pf: Record<string, string> = {};
+    for (const q of qs) {
+      const key = q.id.replace(/^q_/, "");
+      if (extracted[key]) pf[q.id] = extracted[key];
+    }
+    setQuestions(qs);
+    setPrefills(pf);
+    setDraft(qs[0] ? pf[qs[0].id] ?? "" : "");
+    setAnalyzing(false);
   }, []);
 
   const runGeneration = useCallback(async (finalAnswers: AnswerNode[]) => {
@@ -126,7 +163,7 @@ export function useDeckFlow() {
         const next = index + 1;
         setIndex(next);
         setMaxReached((m) => Math.max(m, next));
-        setDraft(answers[questions[next]?.id]?.answer ?? "");
+        setDraft(draftFor(questions[next]?.id, latest));
       } else {
         const ordered = questions
           .map((q) => latest[q.id])
@@ -134,7 +171,7 @@ export function useDeckFlow() {
         void runGeneration(ordered);
       }
     },
-    [index, questions, answers, runGeneration],
+    [index, questions, runGeneration, draftFor],
   );
 
   /** Ask the backend whether the AI needs more context for this question. */
@@ -142,69 +179,79 @@ export function useDeckFlow() {
     (q: InterviewQuestion, answersMap: Record<string, AnswerNode>) => {
       const key = q.id.replace(/^q_/, "");
       const topLevel: Record<string, string> = {};
+      // Known context = submitted answers, plus anything we pre-filled from the
+      // first message. Passing pre-fills here stops the AI re-asking for details
+      // the user already gave (e.g. audience stated in the opening message).
       for (const qq of questions) {
+        const bare = qq.id.replace(/^q_/, "");
         const node = answersMap[qq.id];
-        if (node) topLevel[qq.id.replace(/^q_/, "")] = node.answer;
+        const known = node?.answer ?? prefills[qq.id];
+        if (known) topLevel[bare] = known;
       }
       const thread = answersMap[q.id]?.followUps ?? [];
       return getFollowUp({ key, answers: topLevel, thread });
     },
-    [questions],
+    [questions, prefills],
   );
 
   const submitDraft = useCallback(async () => {
     const text = draft.trim();
-    if (!text || !current) return;
+    if (!text || !current || submitting) return;
 
-    // Answering a pending follow-up → append it, then ask if more context is needed.
-    if (pendingFollowUp) {
-      const node = answers[current.id];
-      const updated: Record<string, AnswerNode> = {
-        ...answers,
-        [current.id]: {
-          ...node,
-          followUps: [...(node?.followUps ?? []), { question: pendingFollowUp.text, answer: text }],
-        },
+    setSubmitting(true);
+    try {
+      // Answering a pending follow-up → append it, then ask if more context is needed.
+      if (pendingFollowUp) {
+        const node = answers[current.id];
+        const updated: Record<string, AnswerNode> = {
+          ...answers,
+          [current.id]: {
+            ...node,
+            followUps: [...(node?.followUps ?? []), { question: pendingFollowUp.text, answer: text }],
+          },
+        };
+        setAnswers(updated);
+        setDraft("");
+        const next = await requestFollowUp(current, updated);
+        setPendingFollowUp(next);
+        if (!next) advance(updated);
+        return;
+      }
+
+      // Record the top-level answer, then let the AI decide on follow-ups.
+      const node: AnswerNode = {
+        questionId: current.id,
+        question: current.text,
+        answer: text,
+        followUps: [],
       };
+      const updated = { ...answers, [current.id]: node };
       setAnswers(updated);
       setDraft("");
+
       const next = await requestFollowUp(current, updated);
       setPendingFollowUp(next);
       if (!next) advance(updated);
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    // Record the top-level answer, then let the AI decide on follow-ups.
-    const node: AnswerNode = {
-      questionId: current.id,
-      question: current.text,
-      answer: text,
-      followUps: [],
-    };
-    const updated = { ...answers, [current.id]: node };
-    setAnswers(updated);
-    setDraft("");
-
-    const next = await requestFollowUp(current, updated);
-    setPendingFollowUp(next);
-    if (!next) advance(updated);
-  }, [draft, current, pendingFollowUp, answers, advance, requestFollowUp]);
+  }, [draft, current, submitting, pendingFollowUp, answers, advance, requestFollowUp]);
 
   const goPrev = useCallback(() => {
     if (index === 0) return;
     const prev = index - 1;
     setPendingFollowUp(null);
     setIndex(prev);
-    setDraft(answers[questions[prev]?.id]?.answer ?? "");
-  }, [index, answers, questions]);
+    setDraft(draftFor(questions[prev]?.id));
+  }, [index, questions, draftFor]);
 
   const goNext = useCallback(() => {
     if (index >= maxReached) return;
     const next = index + 1;
     setPendingFollowUp(null);
     setIndex(next);
-    setDraft(answers[questions[next]?.id]?.answer ?? "");
-  }, [index, maxReached, answers, questions]);
+    setDraft(draftFor(questions[next]?.id));
+  }, [index, maxReached, questions, draftFor]);
 
   // What the question card should currently display.
   const activeQuestion = pendingFollowUp
@@ -213,9 +260,16 @@ export function useDeckFlow() {
       ? { text: current.text, placeholder: current.placeholder }
       : null;
 
+  // True when the current top-level question is showing an AI-extracted value
+  // the user hasn't submitted yet — so we can flag it as pre-filled & editable.
+  const prefilledFromMessage =
+    !pendingFollowUp && !!current && !answers[current.id] && !!prefills[current.id];
+
   return {
     phase,
     initialPrompt,
+    analyzing,
+    submitting,
     questions,
     answeredNodes,
     stages,
@@ -223,6 +277,7 @@ export function useDeckFlow() {
     draft,
     setDraft,
     activeQuestion,
+    prefilledFromMessage,
     // The parent question when the card is showing an AI follow-up.
     parentQuestion: pendingFollowUp && current ? current.text : null,
     page: index + 1,

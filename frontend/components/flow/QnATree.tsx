@@ -64,7 +64,7 @@ export function QnATree({ nodes }: { nodes: AnswerNode[] }) {
   }, [nodes]);
 
   return (
-    <div ref={containerRef} className="relative flex w-[463px] flex-col gap-[40px]">
+    <div ref={containerRef} className="relative flex w-full flex-col gap-[40px]">
       {/* Progress thread — height animates as each new answer extends it down */}
       <div
         className="pointer-events-none absolute left-[1.5px] w-px rounded-full bg-gradient-to-b from-[#403F4E] to-transparent transition-[height] duration-[600ms] ease-out"
@@ -82,7 +82,7 @@ export function QnATree({ nodes }: { nodes: AnswerNode[] }) {
             className="relative z-10 h-[20px] w-[4px] shrink-0"
             aria-hidden
           />
-          <div className="flex w-[443px] shrink-0 flex-col gap-[16px]">
+          <div className="flex min-w-0 flex-1 flex-col gap-[16px]">
             <QA question={node.question} answer={node.answer} />
             {(node.followUps ?? []).map((fu, fi) => (
               <div key={fi} className="flex w-full animate-rise items-start gap-[8px]">
@@ -95,7 +95,7 @@ export function QnATree({ nodes }: { nodes: AnswerNode[] }) {
                     aria-hidden
                   />
                 </span>
-                <div className="w-[403px] shrink-0">
+                <div className="min-w-0 flex-1">
                   <QA question={fu.question} answer={fu.answer} />
                 </div>
               </div>

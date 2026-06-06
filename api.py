@@ -25,6 +25,7 @@ from maverx.config import LLM
 from maverx.intake import IntakeState
 from maverx.llm import OpenRouterClient
 from maverx.pipeline import generate_training
+from maverx.planner import PlannerLLMError
 from service import store
 from service.preview import build_preview_slides
 
@@ -116,6 +117,72 @@ def _llm_followup(client: OpenRouterClient, key: str, answers: dict, thread: lis
     return out.strip().strip('"').strip()
 
 
+def _llm_extract(client: OpenRouterClient, message: str) -> dict:
+    """Pull whichever of the 5 intake fields are clearly stated in the first
+    message. Never invents — a field absent from the message stays empty."""
+    prompt = (
+        "A user described, in one message, a training they want built.\n"
+        "Extract ONLY the fields that are clearly stated. If the message does "
+        "not clearly state a field, leave it as an empty string. Never invent or "
+        "infer beyond what is written.\n\n"
+        f"MESSAGE:\n{message}\n\n"
+        "Return a single JSON object with EXACTLY these string keys:\n"
+        '{"topic":"","audience":"","level":"","duration":"","objective":""}\n'
+        "- topic: the subject or skill to be trained\n"
+        "- audience: who the training is for\n"
+        "- level: only if stated (beginner / intermediate / advanced)\n"
+        "- duration: only if stated (e.g. '2 hours', 'half a day')\n"
+        "- objective: the goal — what participants should be able to do after\n"
+    )
+    try:
+        data = client.complete_json(prompt, temperature=0.1, max_tokens=400)
+    except Exception:
+        return _heuristic_extract(message)
+    out = {}
+    for k in _FOLLOWUP_KEYS:
+        v = str((data or {}).get(k, "")).strip()
+        if v:
+            out[k] = v
+    return out
+
+
+def _heuristic_extract(message: str) -> dict:
+    """Offline fallback: light, conservative parsing. Detects level/duration by
+    keyword, and uses a short message verbatim as the topic. No guessing."""
+    import re
+
+    out: dict = {}
+    low = message.lower()
+    for lvl in ("beginner", "intermediate", "advanced", "novice", "expert"):
+        if lvl in low:
+            out["level"] = "beginner" if lvl == "novice" else (
+                "advanced" if lvl == "expert" else lvl)
+            break
+    m = re.search(r"(half|full)\s+(a\s+)?day|\d+(?:[.,]\d+)?\s*(hours?|hrs?|h|minutes?|mins?|days?)", low)
+    if m:
+        out["duration"] = m.group(0).strip()
+    # A short opening line is almost always just the topic.
+    if len(message.split()) <= 8:
+        out["topic"] = message.strip()
+    return out
+
+
+@app.post("/intake/extract")
+def intake_extract(body: dict) -> dict:
+    """Pre-fill: extract any intake answers already present in the user's first
+    message, so the matching questions arrive pre-filled (and editable)."""
+    message = str(body.get("message", "")).strip()
+    if not message:
+        return {"fields": {}}
+    client = OpenRouterClient()
+    fields = (
+        _llm_extract(client, message)
+        if client.available
+        else _heuristic_extract(message)
+    )
+    return {"fields": fields}
+
+
 @app.post("/intake/followup")
 def intake_followup(body: dict) -> dict:
     """Return the next context-gathering follow-up for a question, or null when
@@ -159,7 +226,26 @@ def create_deck(answers: dict) -> dict:
 
     deck_id = uuid.uuid4().hex[:12]
     deck_dir = (OUTPUT_DIR / deck_id).resolve()
-    result = generate_training(state.answers, out_dir=deck_dir, use_llm=LLM.available())
+    # When a key is configured, the LLM is the expected engine: surface a failure
+    # rather than silently shipping the generic offline template as a real deck.
+    llm_available = LLM.available()
+    try:
+        result = generate_training(
+            state.answers,
+            out_dir=deck_dir,
+            use_llm=llm_available,
+            require_llm=llm_available,
+        )
+    except PlannerLLMError as e:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "ai_generation_failed",
+                "message": "The AI model failed to generate this training. "
+                           "Please try again.",
+                "detail": str(e),
+            },
+        )
     tr = result.training
 
     slides = build_preview_slides(tr)
@@ -170,6 +256,8 @@ def create_deck(answers: dict) -> dict:
         "title": tr.title or tr.topic or "Untitled training",
         "subtitle": tr.subtitle,
         "model_name": result.generated_by,
+        "ai_generated": result.used_llm,
+        "engine": "llm" if result.used_llm else "offline",
         "module_count": len(tr.modules),
         "page_count": len(slides),
         "duration_label": _duration_label(tr.duration_min),

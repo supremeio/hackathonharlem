@@ -10,6 +10,7 @@ import { useDeckFlow } from "./useDeckFlow";
 import { ChatBubble } from "@/components/flow/ChatBubble";
 import { QnATree } from "@/components/flow/QnATree";
 import { QuestionCard } from "@/components/flow/QuestionCard";
+import { TypingIndicator } from "@/components/flow/TypingIndicator";
 import { GenerationStatus } from "@/components/flow/GenerationStatus";
 import { ResultPanel } from "@/components/flow/ResultPanel";
 import { Spinner } from "@/components/ui/Spinner";
@@ -40,6 +41,22 @@ export function DashboardView({
   const [resultClosed, setResultClosed] = useState(false);
   const [resultClosing, setResultClosing] = useState(false);
   const [groups, setGroups] = useState<DeckGroup[]>(deckGroups);
+
+  // Measure the bottom input block so the conversation scroll area always keeps
+  // a 24px gap above it — even when a follow-up grows the card's height.
+  const [bottomEl, setBottomEl] = useState<HTMLDivElement | null>(null);
+  const [bottomH, setBottomH] = useState(0);
+  useEffect(() => {
+    if (!bottomEl) {
+      setBottomH(0);
+      return;
+    }
+    const update = () => setBottomH(bottomEl.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(bottomEl);
+    return () => ro.disconnect();
+  }, [bottomEl]);
 
   const refreshHistory = useCallback(async () => {
     setGroups(await getDeckGroups());
@@ -93,8 +110,16 @@ export function DashboardView({
         </div>
 
         {flow.phase !== "home" && (
-          <div className="absolute left-0 top-[160px] flex w-full animate-fade-up justify-end">
-            <ChatBubble text={flow.initialPrompt} />
+          <div className="absolute left-0 top-[160px] flex w-full flex-col gap-[16px]">
+            <div className="flex w-full animate-fade-up justify-end">
+              <ChatBubble text={flow.initialPrompt} />
+            </div>
+            {/* Analyzing the first message: assistant typing bubble, 16px below */}
+            {flow.phase === "questions" && flow.analyzing && (
+              <div className="flex w-full animate-fade-up justify-start">
+                <TypingIndicator />
+              </div>
+            )}
           </div>
         )}
 
@@ -115,22 +140,24 @@ export function DashboardView({
           </div>
         )}
 
-        {/* Progressive Q&A tree */}
+        {/* Progressive Q&A tree — scrolls within the space above the input block,
+            scrollbar hidden, always 24px clear of it (bottomH + 24px gap + 24px
+            the block sits off the viewport bottom). */}
         {showTree && (
           <div
-            className={`absolute left-0 top-[225px] overflow-y-auto pr-[8px] ${
-              flow.phase === "questions"
-                ? "max-h-[calc(100vh-540px)]"
-                : "max-h-[calc(100vh-437px)]"
-            }`}
+            className="no-scrollbar absolute left-0 right-0 top-[225px] overflow-y-auto"
+            style={{ bottom: bottomH + 48 }}
           >
             <QnATree nodes={flow.answeredNodes} />
           </div>
         )}
 
         {/* Questions: error banner + bottom question card */}
-        {flow.phase === "questions" && flow.activeQuestion && (
-          <div className="absolute bottom-[24px] left-0 flex w-full animate-fade-up flex-col gap-[8px]">
+        {flow.phase === "questions" && !flow.analyzing && flow.activeQuestion && (
+          <div
+            ref={setBottomEl}
+            className="absolute bottom-[24px] left-0 flex w-full animate-fade-up flex-col gap-[8px]"
+          >
             {flow.error && (
               <div className="flex w-full flex-col gap-[2px] rounded-[16px] border border-solid border-[#E2B8B8] bg-[#FDF3F3] px-[16px] py-[12px]">
                 <p className="text-[14px] font-semibold text-[#8A2C2C]">
@@ -161,13 +188,18 @@ export function DashboardView({
               onNext={flow.goNext}
               modelName={models[0]?.name ?? "Claude Sonnet 4.6"}
               parentQuestion={flow.parentQuestion}
+              prefilled={flow.prefilledFromMessage}
+              loading={flow.submitting}
             />
           </div>
         )}
 
         {/* Generating / Result: status label + full composer (bottom-anchored) */}
         {showComposer && (
-          <div className="absolute bottom-[24px] left-0 flex w-full animate-fade-up flex-col items-start gap-[8px]">
+          <div
+            ref={setBottomEl}
+            className="absolute bottom-[24px] left-0 flex w-full animate-fade-up flex-col items-start gap-[8px]"
+          >
             {flow.phase === "generating" && (
               <div className="flex items-center gap-[4px]">
                 <Spinner size={20} color="#257498" />

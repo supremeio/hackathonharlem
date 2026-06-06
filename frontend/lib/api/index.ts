@@ -53,6 +53,34 @@ export async function getInterviewQuestions(
 }
 
 /**
+ * Extract any intake answers already present in the user's first message, keyed
+ * by the bare field name (topic, audience, level, duration, objective). Used to
+ * pre-fill the matching questions. Returns {} on any failure (no pre-fill).
+ */
+export async function extractIntake(
+  message: string,
+): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${API_BASE}/intake/extract`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    const fields = (data?.fields ?? {}) as Record<string, unknown>;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(fields)) {
+      const s = String(v ?? "").trim();
+      if (s) out[k] = s;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Ask the backend whether the AI needs more context for `key`. Returns the next
  * follow-up sub-question, or null when there's enough context (or the cap is hit).
  */
@@ -122,6 +150,13 @@ export async function generateDeck(answers: AnswerNode[]): Promise<DeckResult> {
     err.validation = { issues: detail.issues ?? [], score: detail.score ?? 0 };
     throw err;
   }
+  if (res.status === 502) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      data?.detail?.message ??
+        "The AI model failed to generate this training. Please try again.",
+    );
+  }
   if (!res.ok) {
     throw new Error(`Generation failed (${res.status}).`);
   }
@@ -141,6 +176,7 @@ function mapPayload(d: Record<string, any>): DeckResult {
     title: String(d.title ?? "Untitled training"),
     subtitle: String(d.subtitle ?? ""),
     modelName: String(d.model_name ?? ""),
+    aiGenerated: Boolean(d.ai_generated),
     moduleCount: Number(d.module_count ?? 0),
     pageCount: Number(d.page_count ?? 0),
     durationLabel: String(d.duration_label ?? ""),

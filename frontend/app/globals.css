@@ -14,6 +14,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide scrollbars but keep scrolling (used by the conversation thread). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Motion — one easing curve everywhere keeps the whole app feeling cohesive. */
 :root {
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);

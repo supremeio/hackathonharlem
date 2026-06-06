@@ -29,6 +29,11 @@ from .schema import (
 )
 
 
+class PlannerLLMError(RuntimeError):
+    """Raised when the LLM was required but failed, so the caller can surface
+    the failure instead of silently shipping the offline template."""
+
+
 # --------------------------------------------------------------------------- #
 # Structural helpers (shared by both engines)
 # --------------------------------------------------------------------------- #
@@ -80,7 +85,11 @@ def build_timetables(tr: Training) -> None:
 # Public entry point
 # --------------------------------------------------------------------------- #
 def plan_training(answers: dict, llm: Optional[OpenRouterClient] = None,
-                  progress=None) -> Training:
+                  progress=None, require_llm: bool = False) -> Training:
+    """Plan a training. If ``require_llm`` is set and the LLM is expected to run,
+    a model failure is raised rather than silently degrading to the offline
+    template — so callers can surface "AI failed" instead of shipping a generic
+    deck that looks like a real result."""
     def _say(msg):
         if progress:
             progress(msg)
@@ -94,6 +103,9 @@ def plan_training(answers: dict, llm: Optional[OpenRouterClient] = None,
             _apply_llm(tr, data)
             tr.generated_by = llm.model
         except Exception as e:  # graceful degradation — never crash the demo
+            if require_llm:
+                # AI was expected: don't masquerade an offline deck as a real one.
+                raise PlannerLLMError(str(e)) from e
             _say(f"Model planning failed ({e}); using offline template.")
             _offline_plan(tr)
             tr.generated_by = f"offline-template (LLM error: {e})"

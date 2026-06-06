@@ -30,6 +30,7 @@ class GenerationResult:
     plan_json_path: str
     slug: str
     generated_by: str
+    used_llm: bool
 
 
 def _slugify(text: str) -> str:
@@ -41,6 +42,7 @@ def generate_training(
     answers: dict,
     out_dir: Optional[Path] = None,
     use_llm: bool = True,
+    require_llm: bool = False,
     progress: Optional[Callable[[str], None]] = None,
 ) -> GenerationResult:
     out_dir = Path(out_dir or OUTPUT_DIR)
@@ -56,7 +58,8 @@ def generate_training(
         llm = None
 
     say("Planning the training structure…")
-    tr = plan_training(answers, llm=llm, progress=progress)
+    tr = plan_training(answers, llm=llm, progress=progress, require_llm=require_llm)
+    used_llm = llm is not None and llm.available and not tr.generated_by.startswith("offline")
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     slug = f"{_slugify(tr.title)}_{stamp}"
@@ -80,4 +83,5 @@ def generate_training(
         plan_json_path=str(plan_path),
         slug=slug,
         generated_by=tr.generated_by,
+        used_llm=used_llm,
     )

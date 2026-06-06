@@ -110,6 +110,8 @@ export interface DeckResult {
   title: string;
   subtitle: string;
   modelName: string;
+  /** Whether the model actually generated this deck (false = offline template). */
+  aiGenerated: boolean;
   moduleCount: number;
   pageCount: number;
   durationLabel: string;
