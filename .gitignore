@@ -17,3 +17,6 @@ pycache/
 venv/
 prebite.md
 postbite.md
+.venv/
+data/
+intake.json

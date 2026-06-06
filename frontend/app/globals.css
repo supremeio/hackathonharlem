@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #F9FBFB;
+  color: #0b0825;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Motion — one easing curve everywhere keeps the whole app feeling cohesive. */
+:root {
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slideOutRight {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: riseIn 0.45s var(--ease-out) both;
+}
+.animate-fade-up {
+  animation: fadeInUp 0.4s var(--ease-out) both;
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.45s var(--ease-out) both;
+}
+.animate-slide-out-right {
+  animation: slideOutRight 0.3s var(--ease-out) both;
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.animate-fade-out {
+  animation: fadeOut 0.3s ease both;
+}
+.animate-pop {
+  animation: popIn 0.18s var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-slide-in-right,
+  .animate-slide-out-right,
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-rise,
+  .animate-pop {
+    animation: none;
+  }
+}

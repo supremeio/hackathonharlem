@@ -2,7 +2,65 @@
 
 Person A is the front door and pipeline wiring for the Maverx AI Training Builder. Person B turns the validated intake into deterministic, structured training content that Person C can render.
 
-This repository intentionally does **not** implement Person C rendering.
+## Web Application (full product)
+
+This repo is now a monorepo: the Python pipeline lives at the root and a Next.js
+web client lives in [`frontend/`](frontend/). The web app drives the whole flow —
+conversational intake → validation → generation → `.pptx` rendering → preview &
+download — for **Tier 1** (one deck) and **Tier 2** (three dependent levels).
+
+### Run it locally
+
+Backend (FastAPI) — from the repo root:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn api:app --reload --port 8000
+```
+
+Frontend (Next.js) — in a second terminal:
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local   # NEXT_PUBLIC_API_BASE=http://localhost:8000
+npm run dev                  # http://localhost:3001
+```
+
+### Generation engine
+
+The deck is produced by the **maverx pipeline** (`maverx/`): an LLM planner builds
+a typed `Training`, then the style-guided `DeckBuilder` (`maverx/deck.py` +
+`maverx/config.py` house style) renders an editable `.pptx` on the Maverx master,
+plus pre/post-bite `.docx`. The on-screen preview renders the same `Training`
+plan with the brand palette + Space Grotesk/Raleway, so preview and deck match.
+
+By default it uses the **offline planner** (no API key). To enable the LLM, set in `.env`:
+
+```bash
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=anthropic/claude-sonnet-4.6   # any OpenRouter model id
+```
+
+It falls back to the offline planner automatically when no key is present.
+
+### Web API
+
+In addition to the prototype routes, the client uses:
+
+- `POST /decks` — accepts the client's answers, validates intake (422 with
+  `{issues, followups}` if vague/incomplete), runs the maverx pipeline, persists,
+  and returns the `Training` plan as ordered preview slides + download URLs.
+- `GET /decks` — deck history grouped Today / Yesterday / Earlier.
+- `GET /decks/{id}` — a previously generated deck (its preview slides).
+- `GET /decks/{id}/download/{kind}` — `kind` ∈ `pptx | prebite | postbite | plan`.
+
+CORS is enabled and history is persisted to SQLite under `data/` (gitignored).
+
+---
+
+The sections below document the original Person A / B / C pipeline contracts.
 
 ## Person A Responsibilities
 
