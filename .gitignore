@@ -1,0 +1,10 @@
+intake.json
+intake_draft.json
+content.json
+output.pptx
+prebite.docx
+postbite.docx
+__pycache__/
+pycache/
+*.py[cod]
+.env

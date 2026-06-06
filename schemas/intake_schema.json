@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maverx Training Intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tier",
+    "topic",
+    "audience",
+    "knowledge_level",
+    "duration_hours",
+    "primary_objective",
+    "outline_path",
+    "output_language",
+    "level",
+    "presupposes",
+    "slide_target",
+    "didactic_blocks",
+    "speaker_notes_fields",
+    "prebite_required",
+    "postbite_required",
+    "cost_tracking_required",
+    "slide_confidence_required",
+    "iterative_confirmation_required"
+  ],
+  "properties": {
+    "tier": { "type": "integer", "enum": [1, 2, 3] },
+    "topic": { "type": "string", "minLength": 1 },
+    "audience": { "type": "string", "minLength": 1 },
+    "knowledge_level": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+    "duration_hours": { "type": "number", "exclusiveMinimum": 0, "maximum": 40 },
+    "primary_objective": { "type": "string", "minLength": 20 },
+    "outline_path": { "type": "string", "enum": ["trainer_supplied", "research_assisted"] },
+    "output_language": { "type": "string", "enum": ["en", "nl", "bilingual"] },
+    "level": { "type": "integer", "enum": [1, 2, 3] },
+    "presupposes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "maxItems": 5 },
+    "slide_target": { "type": "integer", "minimum": 30, "maximum": 80 },
+    "didactic_blocks": {
+      "const": ["kick-off", "theory", "example", "exercise", "wrap-up"]
+    },
+    "speaker_notes_fields": {
+      "const": ["aim", "time", "instructions", "reflective_question", "debrief"]
+    },
+    "prebite_required": { "const": true },
+    "postbite_required": { "const": true },
+    "cost_tracking_required": { "const": true },
+    "slide_confidence_required": { "const": true },
+    "iterative_confirmation_required": { "const": true }
+  }
+}

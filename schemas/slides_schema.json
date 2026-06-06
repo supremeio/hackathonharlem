@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maverx Slides",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["slide_number", "slide_type", "level", "title", "body", "table", "speaker_notes"],
+    "properties": {
+      "slide_number": { "type": "integer", "minimum": 1 },
+      "slide_type": {
+        "type": "string",
+        "enum": [
+          "kickoff_title",
+          "kickoff_agenda",
+          "kickoff_objectives",
+          "mentimeter_recap",
+          "theory_intro",
+          "theory_deep",
+          "example_walkthrough",
+          "example_case",
+          "exercise_setup",
+          "exercise_instructions",
+          "wrapup_summary",
+          "wrapup_nextlevel"
+        ]
+      },
+      "level": { "type": "integer", "enum": [1, 2, 3] },
+      "title": { "type": "string" },
+      "body": { "type": "array", "items": { "type": "string" } },
+      "table": {
+        "type": ["object", "null"],
+        "properties": {
+          "headers": { "type": "array", "items": { "type": "string" } },
+          "rows": { "type": "array", "items": { "type": "array" } }
+        }
+      },
+      "speaker_notes": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["aim", "time", "instructions", "reflective_question", "debrief"],
+        "properties": {
+          "aim": { "type": "string" },
+          "time": { "type": "string" },
+          "instructions": { "type": "string" },
+          "reflective_question": { "type": "string" },
+          "debrief": { "type": "string" }
+        }
+      }
+    }
+  }
+}
