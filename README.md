@@ -7,9 +7,13 @@ Person A is the front door and pipeline wiring for the Maverx AI Training Builde
 This repo is now a monorepo: the Python pipeline lives at the root and a Next.js
 web client lives in [`frontend/`](frontend/). The web app drives the whole flow —
 conversational intake → validation → generation → `.pptx` rendering → preview &
-download — for **Tier 1** (one deck) and **Tier 2** (three dependent levels).
+download — for **Tier 1** (one deck).
+
+> The web demo currently generates a single training deck. Multi-level Tier 2 JSON generation is available in the CLI fallback pipeline.
 
 ### Run it locally
+
+Prerequisites: Python 3.10+ and Node.js 18+.
 
 Backend (FastAPI) — from the repo root:
 
@@ -39,7 +43,7 @@ plan with the brand palette + Space Grotesk/Raleway, so preview and deck match.
 By default it uses the **offline planner** (no API key). To enable the LLM, set in `.env`:
 
 ```bash
-OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_API_KEY=<your-openrouter-key>
 OPENROUTER_MODEL=anthropic/claude-sonnet-4.6   # any OpenRouter model id
 ```
 
@@ -75,7 +79,7 @@ The sections below document the original Person A / B / C pipeline contracts.
 
 ## Quickstart
 
-Requires Python 3.10 or newer. No external packages are required.
+Requires Python 3.10 or newer. The web frontend requires Node.js 18+.
 
 ```bash
 git clone https://github.com/isaackim1/hackathonhaarlem.git

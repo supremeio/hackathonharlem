@@ -1,10 +1,7 @@
 import json
-import importlib.util
 import sys
-import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -12,11 +9,6 @@ if str(ROOT) not in sys.path:
 
 from generation.fallback import generate_deck
 from tests.test_person_b import sample_intake
-
-FASTAPI_AVAILABLE = importlib.util.find_spec("fastapi") is not None
-if FASTAPI_AVAILABLE:
-    from api import download, generate, status
-    from fastapi import HTTPException
 
 
 class SlideSchemaPatchTests(unittest.TestCase):
@@ -39,33 +31,10 @@ class SlideSchemaPatchTests(unittest.TestCase):
         self.assertTrue(set(schema["items"]["required"]).issubset(slide))
 
 
-@unittest.skipUnless(FASTAPI_AVAILABLE, "FastAPI is not installed; run pip install -r requirements.txt")
-class PrototypeApiTests(unittest.TestCase):
-    def test_generate_rejects_invalid_intake(self):
-        with self.assertRaises(HTTPException) as raised:
-            generate({"tier": 2})
-        self.assertEqual(raised.exception.status_code, 422)
-
-    def test_generate_and_status_use_configured_output_directory(self):
-        intake = sample_intake()
-        intake["level"] = 1
-        intake["presupposes"] = []
-        with tempfile.TemporaryDirectory() as directory:
-            output_dir = Path(directory).resolve()
-            with patch("api.OUTPUT_DIR", output_dir):
-                response = generate(intake)
-                current = status()
-            self.assertEqual(response["score"], 100)
-            self.assertEqual(response["output_dir"], str(output_dir))
-            self.assertEqual(len(response["files"]), 12)
-            self.assertTrue(current["ready"])
-
-    def test_download_blocks_path_traversal_and_missing_files(self):
-        for filename in ("../secret.json", "missing.json"):
-            with self.subTest(filename=filename):
-                with self.assertRaises(HTTPException) as raised:
-                    download(filename)
-                self.assertEqual(raised.exception.status_code, 404)
+class ObsoletePrototypeApiTests(unittest.TestCase):
+    @unittest.skip("Obsolete /generate, /status, and /download routes were replaced by the current /decks API.")
+    def test_obsolete_prototype_routes(self):
+        pass
 
 
 if __name__ == "__main__":

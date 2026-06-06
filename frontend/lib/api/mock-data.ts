@@ -34,8 +34,8 @@ export const mockModels: Model[] = [
 
 export const mockTiers: Tier[] = [
   { id: "tier-1", label: "Tier 1", available: true },
-  { id: "tier-2", label: "Tier 2", available: true },
-  { id: "tier-3", label: "Tier 3", available: false },
+  { id: "tier-2", label: "Tier 2 (CLI only)", available: false },
+  { id: "tier-3", label: "Tier 3 (Coming soon)", available: false },
 ];
 
 /** The fixed set of top-level interview questions. */
@@ -78,4 +78,3 @@ export const mockFollowUps: Record<string, FollowUpQuestion> = {
     placeholder: "e.g. Banking, Investing, Personal finance",
   },
 };
-

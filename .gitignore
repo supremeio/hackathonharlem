@@ -13,6 +13,8 @@ __pycache__/
 pycache/
 *.py[cod]
 .env
+.env.*
+!.env.example
 .DS_Store
 venv/
 prebite.md

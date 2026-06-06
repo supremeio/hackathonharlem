@@ -52,8 +52,8 @@ export function useDeckFlow() {
 
   const current = questions[index];
 
-  const start = useCallback(async (prompt: string, tier: number = 1) => {
-    tierRef.current = tier;
+  const start = useCallback(async (prompt: string, _tier: number = 1) => {
+    tierRef.current = 1;
     setError(null);
     setInitialPrompt(prompt);
     const qs = await getInterviewQuestions(prompt);

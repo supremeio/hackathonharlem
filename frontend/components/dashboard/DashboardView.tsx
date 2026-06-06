@@ -16,11 +16,6 @@ import { Spinner } from "@/components/ui/Spinner";
 import { getDeckById, getDeckGroups } from "@/lib/api";
 import type { DeckGroup, Model, Suggestion, Tier, User } from "@/types";
 
-function tierNumber(tierId?: string): number {
-  const n = Number((tierId ?? "").replace("tier-", ""));
-  return Number.isFinite(n) && n > 0 ? n : 1;
-}
-
 /**
  * Top-level interactive shell. Renders the sidebar + centred conversation column
  * and switches between the four flow phases (home → questions → generating →
@@ -114,7 +109,7 @@ export function DashboardView({
                 tiers={tiers}
                 value={homePrompt}
                 onValueChange={setHomePrompt}
-                onSubmit={(input) => flow.start(input.prompt, tierNumber(input.tierId))}
+                onSubmit={(input) => flow.start(input.prompt, 1)}
               />
             </div>
           </div>
