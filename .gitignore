@@ -14,3 +14,6 @@ pycache/
 *.py[cod]
 .env
 .DS_Store
+venv/
+prebite.md
+postbite.md
