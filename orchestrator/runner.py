@@ -12,21 +12,33 @@ class OrchestratorError(Exception):
 
 
 def run_generate(intake_path: str, dry_run: bool) -> str:
-    command = [sys.executable, "generate.py", "--intake", intake_path]
+    intake = Path(intake_path)
+    output_dir = intake.parent / "output"
+    expected_path = output_dir / "slides_L1.json"
+    command = [
+        sys.executable,
+        "generate.py",
+        "--intake",
+        str(intake),
+        "--output-dir",
+        str(output_dir),
+    ]
     if dry_run:
         print(f"[DRY RUN] {shlex.join(command)}")
-        return "content.json"
+        return str(expected_path)
 
     result = _run(command, "generate.py")
-    content_path = _json_path_from_stdout(result.stdout) or "content.json"
-    if not Path(content_path).exists():
+    stdout_path = _json_path_from_stdout(result.stdout)
+    content_path = Path(stdout_path) if stdout_path and Path(stdout_path).exists() else expected_path
+    if not content_path.exists():
         raise OrchestratorError(
             f"generate.py completed but expected content file was not found: {content_path}"
         )
-    return content_path
+    return str(content_path)
 
 
 def run_render(intake_path: str, content_path: str, dry_run: bool) -> None:
+    output_dir = Path(content_path).parent
     command = [
         sys.executable,
         "render.py",
@@ -34,17 +46,23 @@ def run_render(intake_path: str, content_path: str, dry_run: bool) -> None:
         intake_path,
         "--content",
         content_path,
+        "--output-dir",
+        str(output_dir),
     ]
     if dry_run:
         print(f"[DRY RUN] {shlex.join(command)}")
         return
 
     _run(command, "render.py")
-    expected = ["output.pptx", "prebite.docx", "postbite.docx"]
-    missing = [path for path in expected if not Path(path).exists()]
+    expected_groups = {
+        "PowerPoint": [output_dir / "output.pptx", *output_dir.glob("training_L*.pptx")],
+        "pre-bite": [output_dir / "prebite.docx", *output_dir.glob("prebite_L*.docx")],
+        "post-bite": [output_dir / "postbite.docx", *output_dir.glob("postbite_L*.docx")],
+    }
+    missing = [name for name, candidates in expected_groups.items() if not any(path.exists() for path in candidates)]
     if missing:
         raise OrchestratorError(
-            f"render.py completed but expected output files were not found: {', '.join(missing)}"
+            f"render.py completed but expected output categories were not found in {output_dir}: {', '.join(missing)}"
         )
 
 

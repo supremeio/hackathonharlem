@@ -263,3 +263,35 @@ Files are written atomically only after the complete requested output set passes
 ### Person C Handoff
 
 Person C should consume `slides_L{level}.json`, `prebite_L{level}.json`, `postbite_L{level}.json`, and `dataset_spec_L{level}.json`. Person B generates content and render guidance only; it does not create PowerPoint, Word, or Excel files.
+
+## Prototype API
+
+Install the API dependencies and start the local prototype:
+
+```bash
+pip install -r requirements.txt
+uvicorn api:app --reload --port 8000
+```
+
+Endpoints:
+
+- `POST /generate`: validates and scores an intake, then writes Person B JSON artifacts to `./output`.
+- `GET /status`: reports whether generated JSON artifacts are available.
+- `GET /download/{filename}`: downloads a generated artifact from `./output`.
+
+Example:
+
+```bash
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  --data @intake.json
+```
+
+The API outputs JSON artifacts for the prototype and for Person C's renderer. It does not render PowerPoint, Word, or Excel files itself.
+
+Bilingual fields remain flat strings so they can be rendered directly:
+
+```text
+NL: Nederlandse tekst
+EN: English text
+```

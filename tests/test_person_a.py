@@ -20,7 +20,7 @@ from intake.parser import (
 )
 from intake.questions import IntakeAborted, collect_intake
 from intake.validator import DIDACTIC_BLOCKS, SPEAKER_NOTES_FIELDS, score_intake, validate_intake
-from orchestrator.runner import _json_path_from_stdout
+from orchestrator.runner import _json_path_from_stdout, run_generate, run_render
 import main as app_main
 
 
@@ -150,6 +150,24 @@ class OrchestratorTests(unittest.TestCase):
     def test_stdout_json_path(self):
         self.assertEqual(_json_path_from_stdout("Wrote build/slides.json successfully"), "build/slides.json")
         self.assertIsNone(_json_path_from_stdout("Done"))
+
+    def test_generate_dry_run_uses_intake_output_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            intake = Path(directory) / "intake.json"
+            expected = Path(directory) / "output" / "slides_L1.json"
+            self.assertEqual(run_generate(str(intake), dry_run=True), str(expected))
+
+    def test_render_accepts_level_suffixed_outputs_in_content_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory) / "output"
+            output_dir.mkdir()
+            content = output_dir / "slides_L1.json"
+            content.write_text("{}")
+            (output_dir / "training_L1.pptx").write_text("")
+            (output_dir / "prebite_L1.docx").write_text("")
+            (output_dir / "postbite_L1.docx").write_text("")
+            with patch("orchestrator.runner._run"):
+                run_render(str(Path(directory) / "intake.json"), str(content), dry_run=False)
 
 
 class MainFlowTests(unittest.TestCase):
