@@ -49,6 +49,35 @@ OPENROUTER_MODEL=anthropic/claude-sonnet-4.6   # any OpenRouter model id
 
 It falls back to the offline planner automatically when no key is present.
 
+### Environment variables
+
+Secrets are never committed — set them as environment variables. `.env` and
+`frontend/.env.local` are gitignored.
+
+| Variable | Where | Required | Purpose |
+|---|---|---|---|
+| `OPENROUTER_API_KEY` | backend (`.env`) | for LLM generation | Your OpenRouter key (`sk-or-...`). Without it the app uses the offline template and shows a "Generated offline · AI off" badge. |
+| `OPENROUTER_MODEL` | backend (`.env`) | no | OpenRouter model id. Defaults to `anthropic/claude-sonnet-4.6`. |
+| `OPENROUTER_TEMPERATURE` / `OPENROUTER_MAX_TOKENS` | backend (`.env`) | no | Optional generation tuning. |
+| `NEXT_PUBLIC_API_BASE` | frontend (`.env.local`) | yes | URL of the FastAPI backend (e.g. `http://localhost:8000`, or your deployed API URL). |
+
+**Local:** copy the templates and fill in the key, then restart the backend:
+
+```bash
+cp .env.example .env                 # add OPENROUTER_API_KEY=sk-or-...
+cp frontend/.env.example frontend/.env.local
+uvicorn api:app --reload --port 8000
+curl -s http://localhost:8000/health   # expect "llm": true
+```
+
+Get/manage keys at https://openrouter.ai/keys — the account needs credits and
+access to the chosen model.
+
+**Vercel:** the `.env` files are not deployed. In the Vercel project, go to
+**Settings → Environment Variables**, add `OPENROUTER_API_KEY` (and optionally
+`OPENROUTER_MODEL`) plus `NEXT_PUBLIC_API_BASE` pointing at the deployed API, then
+**redeploy** — env vars only take effect on a new deployment.
+
 ### Web API
 
 In addition to the prototype routes, the client uses:
