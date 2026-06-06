@@ -1,13 +1,15 @@
 """Lightweight SQLite store for generated decks (history sidebar)."""
 
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "decks.db"
+# Override with DECKS_DB to point history at a persistent disk (e.g. on Render).
+DB_PATH = Path(os.getenv("DECKS_DB", PROJECT_ROOT / "data" / "decks.db"))
 
 
 def _connect() -> sqlite3.Connection:

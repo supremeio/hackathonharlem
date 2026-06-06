@@ -78,6 +78,40 @@ access to the chosen model.
 `OPENROUTER_MODEL`) plus `NEXT_PUBLIC_API_BASE` pointing at the deployed API, then
 **redeploy** — env vars only take effect on a new deployment.
 
+### Deployment
+
+The frontend and backend deploy **separately**: the Next.js client goes on Vercel,
+the FastAPI backend goes on a host with a real disk (it persists deck history to
+SQLite and writes generated `.pptx`/`.docx` files — neither survives Vercel's
+ephemeral serverless filesystem).
+
+**Frontend → Vercel**
+
+1. New Project → import this repo.
+2. **Set Root Directory to `frontend`** (Settings → General). This is the key step:
+   the Next.js app lives in the subdirectory, so without this Vercel finds nothing
+   to build at the repo root and serves a 404.
+3. Add env var `NEXT_PUBLIC_API_BASE` = your backend URL (the Render URL below).
+4. Deploy.
+
+**Backend → Render** (via the included [`render.yaml`](render.yaml) blueprint)
+
+1. Render Dashboard → **New → Blueprint** → pick this repo. It provisions a Python
+   web service running `uvicorn api:app`, with a 1 GB persistent disk mounted at
+   `/var/data` (history + generated decks are written there via `DECKS_DB` /
+   `OUTPUT_DIR`).
+2. Set `OPENROUTER_API_KEY` in the service's environment (it's marked `sync: false`,
+   so Render prompts for it — never commit it).
+3. Deploy, then copy the service URL into the frontend's `NEXT_PUBLIC_API_BASE`.
+
+> The persistent disk in `render.yaml` needs a paid instance (`plan: starter`). On a
+> free instance, drop the `disk:` block — the app still runs, but history and
+> downloads reset whenever the instance restarts. Railway works too: same start
+> command (`uvicorn api:app --host 0.0.0.0 --port $PORT`) with a volume mounted and
+> `DECKS_DB` / `OUTPUT_DIR` pointed at it.
+
+CORS is open (`*`), so the Vercel frontend can call the Render backend directly.
+
 ### Web API
 
 In addition to the prototype routes, the client uses:

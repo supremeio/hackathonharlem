@@ -18,7 +18,8 @@ from pathlib import Path
 PKG_DIR = Path(__file__).resolve().parent
 ASSETS_DIR = PKG_DIR / "assets"
 PROJECT_DIR = PKG_DIR.parent
-OUTPUT_DIR = PROJECT_DIR / "output"
+# Override with OUTPUT_DIR to write generated decks to a persistent disk (e.g. Render).
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", PROJECT_DIR / "output"))
 
 # The master template the deck is built ON (referenced, never redrawn).
 MASTER_TEMPLATE = ASSETS_DIR / "maverx_master.pptx"
@@ -26,7 +27,7 @@ MASTER_TEMPLATE = ASSETS_DIR / "maverx_master.pptx"
 # produced by tools/make_blank.py. The generator builds on THIS.
 BLANK_TEMPLATE = ASSETS_DIR / "maverx_blank.pptx"
 
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # --------------------------------------------------------------------------- #

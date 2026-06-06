@@ -1,0 +1,29 @@
+# Render Blueprint for the Maverx Training Builder backend (FastAPI).
+# Deploy: Render Dashboard → New → Blueprint → pick this repo.
+# The frontend deploys separately on Vercel (Root Directory = frontend) and
+# points NEXT_PUBLIC_API_BASE at this service's URL.
+services:
+  - type: web
+    name: maverx-api
+    runtime: python
+    plan: starter # a persistent disk requires a paid instance; free plans are ephemeral
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      # Set this in the Render dashboard (marked secret) — not committed.
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: anthropic/claude-sonnet-4.6
+      # Keep history (SQLite) and generated decks on the mounted persistent disk.
+      - key: DECKS_DB
+        value: /var/data/decks.db
+      - key: OUTPUT_DIR
+        value: /var/data/output
+    disk:
+      name: maverx-data
+      mountPath: /var/data
+      sizeGB: 1

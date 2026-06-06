@@ -6,6 +6,7 @@ generates the styled deck + bites, persists history, and returns the Training
 plan as preview slides; plus history and per-kind download routes.
 """
 
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,7 +35,8 @@ MAX_FOLLOWUPS = 2
 _FOLLOWUP_KEYS = ("topic", "audience", "level", "duration", "objective")
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-OUTPUT_DIR = (PROJECT_ROOT / "output").resolve()
+# Override with OUTPUT_DIR (env) to write/serve decks from a persistent disk (Render).
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", PROJECT_ROOT / "output")).resolve()
 
 # kind -> (filename suffix, media type, optional .md fallback)
 DOWNLOAD_KINDS = {
