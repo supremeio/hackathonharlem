@@ -1,8 +1,8 @@
-# Maverx AI Training Builder - Person A
+# Maverx AI Training Builder
 
-Person A is the front door and pipeline wiring for the Maverx AI Training Builder. This CLI turns a trainer's initial idea into a validated `intake.json`, refuses vague or incomplete input, and hands the result to the future Person B and Person C scripts.
+Person A is the front door and pipeline wiring for the Maverx AI Training Builder. Person B turns the validated intake into deterministic, structured training content that Person C can render.
 
-This repository intentionally does **not** implement content generation or rendering. `generate.py` and `render.py` are black-box integration contracts.
+This repository intentionally does **not** implement Person C rendering.
 
 ## Person A Responsibilities
 
@@ -190,3 +190,76 @@ Dry-run still collects, validates, scores, and saves the final intake. It then p
 This implementation enforces the required didactic arc on the intake contract, requires all five speaker-note fields, distinguishes challenge tier from module level, records level dependencies, requires pre- and post-bites, records outline and language choices, requires future cost/confidence/iterative-confirmation behavior, rejects vague briefs, and provides a timed intake-to-orchestration demo path.
 
 The team-plan PDF describes Tier 2 as three dependent training levels. Person A's schema supports that dependency through `tier`, `level`, and `presupposes`; Person B remains responsible for producing visibly progressive content.
+
+## Person B Deterministic Fallback Generator
+
+Person B provides a reliable demo path that requires no API key, network access, or external Python packages. It generates complete structured JSON content using the existing Maverx slide types from `schemas/slides_schema.json`.
+
+Run:
+
+```bash
+python3 generate.py --intake intake.json --output-dir output
+```
+
+For Tier 2, the generator always creates:
+
+```text
+slides_L1.json              prebite_L1.json
+slides_L2.json              prebite_L2.json
+slides_L3.json              prebite_L3.json
+postbite_L1.json            dataset_spec_L1.json
+postbite_L2.json            dataset_spec_L2.json
+postbite_L3.json            dataset_spec_L3.json
+```
+
+Tier 1 creates only the four Level 1 files. The final CLI line is the absolute path to `slides_L1.json`, allowing Person A's orchestrator to detect the primary output.
+
+### Deck Contract
+
+Each deck contains exactly 20 slides and follows the contiguous order:
+
+```text
+kick-off → theory → example → exercise → wrap-up
+```
+
+Level 1 contains no Mentimeter recap. Levels 2 and 3 each contain exactly one `mentimeter_recap` slide with five recap questions. Level 2 explicitly builds on Level 1; Level 3 explicitly combines Level 1 and Level 2 concepts.
+
+Every slide includes:
+
+- An existing Maverx `slide_type`
+- Short, practical slide content
+- A visual suggestion
+- Confidence score and reason
+- Trainer-ready speaker notes with all required facilitation fields
+
+The deterministic fallback normally scores content at `0.65`, structural slides at `0.75`, and unresearched content requested through a research-assisted outline at `0.50`.
+
+### Language Support
+
+`en`, `nl`, and `bilingual` are supported. Bilingual values remain flat renderable strings:
+
+```text
+NL: Nederlandse tekst
+EN: English text
+```
+
+### Cost Tracking
+
+Every slide deck records estimated input and output tokens. Deterministic fallback generation always reports:
+
+```json
+{
+  "model_name": "deterministic-fallback",
+  "estimated_cost_eur": 0.0
+}
+```
+
+### Validation
+
+Person B validates every deck and artifact before writing any output. Validation covers slide counts, sequential numbering, block order, allowed slide types, complete speaker notes, confidence fields, level progression, Mentimeter rules, and pre-bite/post-bite/dataset contracts.
+
+Files are written atomically only after the complete requested output set passes validation.
+
+### Person C Handoff
+
+Person C should consume `slides_L{level}.json`, `prebite_L{level}.json`, `postbite_L{level}.json`, and `dataset_spec_L{level}.json`. Person B generates content and render guidance only; it does not create PowerPoint, Word, or Excel files.

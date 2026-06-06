@@ -4,7 +4,13 @@ content.json
 output.pptx
 prebite.docx
 postbite.docx
+slides_L*.json
+prebite_L*.json
+postbite_L*.json
+dataset_spec_L*.json
+output/
 __pycache__/
 pycache/
 *.py[cod]
 .env
+.DS_Store

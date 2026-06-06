@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Maverx Deterministic Content Deck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generation_mode", "output_language", "model_name", "cost_tracking", "slides"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "generation_mode": { "const": "deterministic_fallback" },
+    "output_language": { "enum": ["en", "nl", "bilingual"] },
+    "model_name": { "const": "deterministic-fallback" },
+    "cost_tracking": {
+      "type": "object",
+      "required": ["model_name", "input_tokens_estimate", "output_tokens_estimate", "estimated_cost_eur"],
+      "properties": {
+        "model_name": { "const": "deterministic-fallback" },
+        "input_tokens_estimate": { "type": "integer", "minimum": 0 },
+        "output_tokens_estimate": { "type": "integer", "minimum": 0 },
+        "estimated_cost_eur": { "const": 0.0 }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": [
+          "slide_number", "slide_type", "block", "level", "title", "body", "table",
+          "visual_suggestion", "confidence_score", "confidence_reason", "speaker_notes"
+        ],
+        "properties": {
+          "slide_number": { "type": "integer", "minimum": 1 },
+          "slide_type": {
+            "enum": [
+              "kickoff_title", "kickoff_agenda", "kickoff_objectives", "mentimeter_recap",
+              "theory_intro", "theory_deep", "example_walkthrough", "example_case",
+              "exercise_setup", "exercise_instructions", "wrapup_summary", "wrapup_nextlevel"
+            ]
+          },
+          "block": { "enum": ["kick-off", "theory", "example", "exercise", "wrap-up"] },
+          "level": { "enum": [1, 2, 3] },
+          "title": { "type": "string", "minLength": 1 },
+          "body": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "table": { "type": ["object", "null"] },
+          "visual_suggestion": { "type": "string", "minLength": 1 },
+          "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "confidence_reason": { "type": "string", "minLength": 1 },
+          "speaker_notes": {
+            "type": "object",
+            "required": [
+              "aim", "time", "instructions", "reflective_question", "debrief",
+              "key_discussion_points", "link_to_reality"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
