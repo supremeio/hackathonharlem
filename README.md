@@ -106,9 +106,15 @@ ephemeral serverless filesystem).
 
 > The persistent disk in `render.yaml` needs a paid instance (`plan: starter`). On a
 > free instance, drop the `disk:` block — the app still runs, but history and
-> downloads reset whenever the instance restarts. Railway works too: same start
-> command (`uvicorn api:app --host 0.0.0.0 --port $PORT`) with a volume mounted and
-> `DECKS_DB` / `OUTPUT_DIR` pointed at it.
+> downloads reset whenever the instance restarts.
+
+**Backend → Railway** (alternative): the included [`Procfile`](Procfile)
+(`web: uvicorn api:app --host 0.0.0.0 --port $PORT`) tells Railway the correct
+entrypoint — without it, Railway guesses `main:app` (the CLI) and crashes with
+*Attribute "app" not found in module "main"*. If you set a custom Start Command in
+the Railway dashboard, make sure it's `uvicorn api:app --host 0.0.0.0 --port $PORT`
+(not `main:app`). Add a Volume, point `DECKS_DB` / `OUTPUT_DIR` at its mount path,
+and set `OPENROUTER_API_KEY`.
 
 CORS is open (`*`), so the Vercel frontend can call the Render backend directly.
 
