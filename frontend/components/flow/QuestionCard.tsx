@@ -4,6 +4,7 @@ import { assets } from "@/lib/assets";
 import { Icon } from "@/components/ui/Icon";
 import { Chevron } from "@/components/ui/Chevron";
 import { Spinner } from "@/components/ui/Spinner";
+import { AnimateHeight } from "@/components/ui/AnimateHeight";
 
 /* === FIGMA DESIGN TOKENS === (node 11:1259 "Questions Container")
    wrapper:  flex col gap-9, w-680
@@ -61,7 +62,7 @@ export function QuestionCard({
         {heading}
       </p>
 
-      <div className="flex w-full flex-col rounded-[38px] border border-solid border-stroke bg-white">
+      <AnimateHeight className="w-full rounded-[38px] border border-solid border-stroke bg-white">
         {/* Follow-up banner — references the parent question */}
         {parentQuestion && (
           <div className="flex w-full flex-col items-start p-[4px]">
@@ -168,44 +169,31 @@ export function QuestionCard({
             </button>
           </div>
 
-          {/* Pre-fill hint — the answer came from the first message; editable */}
-          {prefilled && (
-            <div className="flex items-center gap-[6px] text-[13px] font-medium leading-normal text-muted">
-              <span className="size-[6px] shrink-0 rounded-full bg-brand-purple" />
-              <span className="[word-break:break-word]">
-                Pre-filled from your message — edit if needed
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Footer: model chip + faded voice/send */}
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-[4px] rounded-chip bg-surface px-[8px] py-[4px]">
-            <Icon src={assets.iconClaude} size={24} />
-            <span className="whitespace-nowrap text-[14px] font-medium leading-normal text-ink [word-break:break-word]">
-              {modelName}
-            </span>
-          </div>
-          {/* Decorative voice/send — hidden on follow-up questions */}
-          {!parentQuestion && (
-            <div className="flex items-center gap-[12px] opacity-10" aria-hidden>
-              <Icon src={assets.iconVoice} size={24} />
-              <span className="relative flex size-[32px] items-center justify-center rounded-full bg-[#25144A]">
-                <span className="relative size-[20px] overflow-clip">
-                  <span className="absolute inset-[12.5%_20.83%]">
-                    <span className="absolute inset-[-4.67%_-6%]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={assets.iconArrowUp} alt="" className="block size-full max-w-none" />
-                    </span>
-                  </span>
-                </span>
+        {/* Footer: pre-fill note + model chip, left-aligned. No voice/send here —
+            those only belong in the composer (when questions aren't being asked). */}
+        <div className="flex w-full items-center">
+          <div className="flex items-center gap-[24px]">
+            {/* Model pill stays on the left; the pre-fill notice sits to its right. */}
+            <div className="flex items-center gap-[4px] rounded-chip bg-surface px-[8px] py-[4px]">
+              <Icon src={assets.iconClaude} size={24} />
+              <span className="whitespace-nowrap text-[14px] font-medium leading-normal text-ink [word-break:break-word]">
+                {modelName}
               </span>
             </div>
-          )}
+            {prefilled && (
+              <div className="flex items-center gap-[6px] text-[13px] font-medium leading-normal text-muted">
+                <span className="size-[6px] shrink-0 rounded-full bg-brand-purple" />
+                <span className="whitespace-nowrap [word-break:break-word]">
+                  Pre-filled from your message, edit if needed
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         </div>
-      </div>
+      </AnimateHeight>
     </div>
   );
 }

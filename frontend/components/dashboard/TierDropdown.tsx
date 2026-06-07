@@ -6,7 +6,8 @@ import { Icon } from "@/components/ui/Icon";
 import type { Tier } from "@/types";
 
 /* === FIGMA DESIGN TOKENS === (node 18:58 "Tier dropdown")
-   menu:     bg white, border 1px #E2E8F0, rounded-16, p-12, gap-12, w-160 (opens upward)
+   menu:     bg white, border 1px #E2E8F0, rounded-16, p-12, gap-12 (opens upward);
+             width hugs the widest item (min 160) so "Tier 3 (Coming soon)" fits
    item:     rounded-8, px-8 py-4, Figtree Medium 15px/24px #232323
    selected: bg #F3F6F8 + green check (20px)
    tier 2/3: unavailable — hovering swaps the label to "Coming soon"
@@ -109,7 +110,7 @@ export function TierDropdown({
       {open && (
         <div
           role="listbox"
-          className="absolute bottom-full left-0 z-50 mb-[8px] flex w-[160px] origin-bottom-left animate-pop flex-col gap-[12px] rounded-[16px] border border-solid border-stroke bg-white p-[12px]"
+          className="absolute bottom-full left-0 z-50 mb-[8px] flex w-max min-w-[160px] origin-bottom-left animate-pop flex-col gap-[12px] rounded-[16px] border border-solid border-stroke bg-white p-[12px]"
         >
           {tiers.map((tier) => (
             <TierOption

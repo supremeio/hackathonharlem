@@ -113,6 +113,22 @@ body {
 .animate-pop {
   animation: popIn 0.18s var(--ease-out) both;
 }
+@keyframes qSwapIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+/* Eased fade/settle for swapping the active question content. */
+.animate-q-swap {
+  animation: qSwapIn 0.42s var(--ease-out) both;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
@@ -121,7 +137,8 @@ body {
   .animate-fade-in,
   .animate-fade-out,
   .animate-rise,
-  .animate-pop {
+  .animate-pop,
+  .animate-q-swap {
     animation: none;
   }
 }

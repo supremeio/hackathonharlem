@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { assets } from "@/lib/assets";
 import { Icon } from "@/components/ui/Icon";
 import { Chevron } from "@/components/ui/Chevron";
@@ -254,14 +254,23 @@ function SlideStage({ slide: s }: { slide: PreviewSlide }) {
 export function ResultPanel({
   result,
   onClose,
+  autoAdvanceMs,
 }: {
   result: DeckResult;
   onClose?: () => void;
+  /** When set, cycles through the slides automatically (used by the demo). */
+  autoAdvanceMs?: number;
 }) {
   const [index, setIndex] = useState(0);
   const slides = result.slides ?? [];
   const slide = slides[Math.min(index, slides.length - 1)];
   const total = slides.length;
+
+  useEffect(() => {
+    if (!autoAdvanceMs || total <= 1) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % total), autoAdvanceMs);
+    return () => clearInterval(id);
+  }, [autoAdvanceMs, total]);
 
   function open(url: string) {
     if (url) window.open(url, "_blank", "noopener,noreferrer");
@@ -289,7 +298,7 @@ export function ResultPanel({
               {!result.aiGenerated && (
                 <div
                   className="flex items-center gap-[6px] rounded-pill border border-solid border-[#F3D9A8] bg-[#FDF6EA] px-[14px] py-[6px]"
-                  title="No AI key configured — this deck was built with the offline template, not the model."
+                  title="No AI key configured. This deck was built with the offline template, not the model."
                 >
                   <span className="size-[8px] shrink-0 rounded-full bg-brand-orange" />
                   <span className="whitespace-nowrap text-[13px] font-semibold leading-normal text-[#8A5A12] [word-break:break-word]">
@@ -311,7 +320,10 @@ export function ResultPanel({
           {/* Slide preview */}
           {slide ? (
             <div className="group relative h-[400px] w-full">
-              <SlideStage slide={slide} />
+              {/* Keyed by index so slides crossfade instead of snapping. */}
+              <div key={index} className="h-full w-full animate-fade-in">
+                <SlideStage slide={slide} />
+              </div>
               {total > 1 && (
                 <>
                   <button
