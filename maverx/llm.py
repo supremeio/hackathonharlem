@@ -76,7 +76,13 @@ class OpenRouterClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        choices = data.get("choices") or []
+        if not choices:
+            raise RuntimeError(f"OpenRouter returned no choices: {str(data)[:200]}")
+        content = (choices[0].get("message") or {}).get("content")
+        if not content:
+            raise RuntimeError("OpenRouter returned an empty message.")
+        return content
 
     def complete_json(self, prompt: str, system: Optional[str] = None, **kw) -> dict:
         """Completion that must return a JSON object. Robust to fenced output."""
@@ -85,15 +91,10 @@ class OpenRouterClient:
 
 
 def _extract_json(text: str) -> dict:
-    """Pull a JSON object out of a model response, tolerating ``` fences."""
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("```", 2)[1]
-        if text.lstrip().lower().startswith("json"):
-            text = text.lstrip()[4:]
-    # find first { ... last }
+    """Pull a JSON object out of a model response, tolerating ``` fences and prose
+    by grabbing the outermost {...} span."""
     start = text.find("{")
     end = text.rfind("}")
-    if start == -1 or end == -1:
+    if start == -1 or end == -1 or end < start:
         raise ValueError("No JSON object found in model output.")
     return json.loads(text[start : end + 1])

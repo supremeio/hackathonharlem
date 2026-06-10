@@ -39,7 +39,6 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-figtree)", "system-ui", "sans-serif"],
         grotesk: ["var(--font-grotesk)", "system-ui", "sans-serif"],
-        raleway: ["var(--font-raleway)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         card: "24px",

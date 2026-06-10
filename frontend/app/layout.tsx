@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Space_Grotesk, Raleway } from "next/font/google";
+import { Figtree, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -17,13 +17,6 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-const raleway = Raleway({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-raleway",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: "AI Deck Studio",
   description: "Create decks, lessons, and quizzes with AI.",
@@ -37,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${figtree.variable} ${spaceGrotesk.variable} ${raleway.variable}`}
+      className={`${figtree.variable} ${spaceGrotesk.variable}`}
     >
       <body className="font-sans">{children}</body>
     </html>

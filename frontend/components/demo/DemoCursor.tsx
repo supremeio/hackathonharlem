@@ -1,13 +1,19 @@
+"use client";
+
+import { useReducedMotion } from "@/lib/demo/useReducedMotion";
+
 /* A fake, smoothly-animated cursor for the auto-playing demo. Glides between
-   targets with eased CSS transitions and pulses a ripple on "click". */
+   targets with eased CSS transitions and pulses a ripple on "click". Honors
+   prefers-reduced-motion by snapping instead of gliding. */
 export function DemoCursor({ x, y, down }: { x: number; y: number; down: boolean }) {
+  const reduced = useReducedMotion();
   return (
     <div
       aria-hidden
       className="pointer-events-none fixed left-0 top-0 z-[100]"
       style={{
         transform: `translate(${x}px, ${y}px)`,
-        transition: "transform 250ms cubic-bezier(0.65, 0, 0.35, 1)",
+        transition: reduced ? "none" : "transform 250ms cubic-bezier(0.65, 0, 0.35, 1)",
         willChange: "transform",
       }}
     >

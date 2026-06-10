@@ -6,6 +6,7 @@ generates the styled deck + bites, persists history, and returns the Training
 plan as preview slides; plus history and per-kind download routes.
 """
 
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
@@ -17,6 +18,9 @@ try:
     load_dotenv()
 except Exception:
     pass
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger("maverx.api")
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -112,7 +116,8 @@ def _llm_followup(client: OpenRouterClient, key: str, answers: dict, thread: lis
     )
     try:
         out = client.complete(prompt, max_tokens=80, temperature=0.3).strip()
-    except Exception:
+    except Exception as e:
+        logger.warning("Follow-up LLM call failed for %r: %s", key, e)
         return None
     if not out or out.upper().startswith("OK") or len(out) < 5:
         return None
@@ -138,7 +143,8 @@ def _llm_extract(client: OpenRouterClient, message: str) -> dict:
     )
     try:
         data = client.complete_json(prompt, temperature=0.1, max_tokens=400)
-    except Exception:
+    except Exception as e:
+        logger.warning("Extraction LLM call failed; using heuristic: %s", e)
         return _heuristic_extract(message)
     out = {}
     for k in _FOLLOWUP_KEYS:
@@ -239,13 +245,14 @@ def create_deck(answers: dict) -> dict:
             require_llm=llm_available,
         )
     except PlannerLLMError as e:
+        # Log the upstream detail server-side; never leak it to the client.
+        logger.error("AI generation failed: %s", e)
         raise HTTPException(
             status_code=502,
             detail={
                 "error": "ai_generation_failed",
                 "message": "The AI model failed to generate this training. "
                            "Please try again.",
-                "detail": str(e),
             },
         )
     tr = result.training
